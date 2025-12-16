@@ -9,8 +9,8 @@ interface AgentCardProps {
 }
 
 export function AgentCard({ agent }: AgentCardProps) {
-  const callDuration = useCallTimer(agent.lastStatusChange, agent.status);
-  const lastActivity = useTimeAgo(agent.lastStatusChange);
+  const callDuration = useCallTimer(agent.lastStatusChange || '', agent.status);
+  const lastActivity = useTimeAgo(agent.lastStatusChange || '');
 
   return (
     <div

@@ -16,7 +16,7 @@ interface Notification {
   timestamp: Date;
 }
 
-const SERVER_URL = 'http://10.0.3.230:3100';
+const SERVER_URL = import.meta.env.VITE_SOCKET_URL || 'http://10.0.3.230:3100';
 
 export function useAgentSocket(): UseAgentSocketReturn {
   const [agents, setAgents] = useState<Map<string, Agent>>(new Map());
@@ -24,7 +24,7 @@ export function useAgentSocket(): UseAgentSocketReturn {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const socketRef = useRef<Socket | null>(null);
-  const highlightTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const highlightTimers = useRef<Map<string, number>>(new Map());
 
   const addNotification = (message: string, type: 'success' | 'error' | 'info') => {
     const notification: Notification = {
@@ -77,15 +77,29 @@ export function useAgentSocket(): UseAgentSocketReturn {
     // Agent events
     socket.on('agents:initial', (agentsList: Agent[]) => {
       console.log('📋 Received initial agents:', agentsList);
+      console.log('📋 First agent data:', JSON.stringify(agentsList[0], null, 2));
       const agentsMap = new Map<string, Agent>();
-      agentsList.forEach(agent => agentsMap.set(agent.extension, agent));
+      agentsList.forEach(agent => {
+        console.log(`Agent ${agent.extension} lastStatusChange:`, agent.lastStatusChange, 'type:', typeof agent.lastStatusChange);
+        // Use current time if lastStatusChange is missing or invalid
+        const agentWithTimestamp = {
+          ...agent,
+          lastStatusChange: agent.lastStatusChange || new Date().toISOString(),
+        };
+        agentsMap.set(agent.extension, agentWithTimestamp);
+      });
       setAgents(agentsMap);
       setLastUpdate(new Date());
     });
 
     socket.on('agent:registered', (agent: Agent) => {
       console.log('➕ Agent registered:', agent);
-      setAgents(prev => new Map(prev).set(agent.extension, agent));
+      // Ensure lastStatusChange has a valid timestamp
+      const agentWithTimestamp = {
+        ...agent,
+        lastStatusChange: agent.lastStatusChange || new Date().toISOString(),
+      };
+      setAgents(prev => new Map(prev).set(agent.extension, agentWithTimestamp));
       setLastUpdate(new Date());
       addNotification(`${agent.name} logged in`, 'success');
     });
@@ -96,9 +110,11 @@ export function useAgentSocket(): UseAgentSocketReturn {
         const newMap = new Map(prev);
         const agent = newMap.get(data.extension);
         if (agent) {
-          agent.status = data.newStatus;
-          agent.lastStatusChange = data.timestamp;
-          newMap.set(data.extension, { ...agent });
+          newMap.set(data.extension, {
+            ...agent,
+            status: data.newStatus,
+            lastStatusChange: data.timestamp || new Date().toISOString(),
+          });
         }
         return newMap;
       });
@@ -107,44 +123,68 @@ export function useAgentSocket(): UseAgentSocketReturn {
 
     socket.on('agent:call-started', (data: CallEvent) => {
       console.log('📞 Call started:', data);
+      console.log('📞 Call started timestamp:', data.timestamp, 'type:', typeof data.timestamp);
+      const callStartTime = data.timestamp || new Date().toISOString();
       setAgents(prev => {
         const newMap = new Map(prev);
         const agent = newMap.get(data.extension);
         if (agent) {
-          agent.status = 'busy';
-          agent.currentCall = data.channelId;
-          agent.lastStatusChange = data.timestamp;
-          newMap.set(data.extension, { ...agent });
+          const updatedAgent = {
+            ...agent,
+            status: 'busy' as const,
+            currentCall: data.channelId,
+            lastStatusChange: callStartTime,
+          };
+          console.log('📞 Updated agent with call start time:', callStartTime);
+          newMap.set(data.extension, updatedAgent);
         }
         return newMap;
       });
       setLastUpdate(new Date());
     });
-
     socket.on('agent:call-ended', (data: CallEndEvent) => {
       console.log('✅ Call ended:', data);
+      console.log('✅ Call ended keys:', Object.keys(data));
       setAgents(prev => {
         const newMap = new Map(prev);
         const agent = newMap.get(data.extension);
         if (agent) {
-          agent.status = 'available';
-          agent.currentCall = '';
-          agent.totalCalls = data.totalCalls;
-          agent.lastStatusChange = data.timestamp;
-          newMap.set(data.extension, { ...agent });
+          // Increment totalCalls ourselves since server doesn't send it
+          const newTotalCalls = (data.totalCalls !== undefined) ? data.totalCalls : (agent.totalCalls + 1);
+          newMap.set(data.extension, {
+            ...agent,
+            status: 'available',
+            currentCall: '',
+            totalCalls: newTotalCalls,
+            lastStatusChange: data.timestamp || new Date().toISOString(),
+          });
+          console.log('✅ Updated agent totalCalls:', agent.totalCalls, '→', newTotalCalls);
         }
         return newMap;
       });
       setLastUpdate(new Date());
       
       // Trigger animation for call increment
-      const element = document.querySelector(`[data-extension="${data.extension}"]`);
-      if (element) {
-        element.classList.add('animate-bounce-in');
-        setTimeout(() => {
-          element.classList.remove('animate-bounce-in');
-        }, 500);
-      }
+      setTimeout(() => {
+        const element = document.querySelector(`[data-extension="${data.extension}"] .text-blue-600`);
+        if (element) {
+          element.classList.add('animate-bounce-in');
+          setTimeout(() => {
+            element.classList.remove('animate-bounce-in');
+          }, 500);
+        }
+      }, 50);
+    });
+
+    socket.on('agent:unregistered', (data: { extension: string }) => {
+      console.log('➖ Agent unregistered:', data);
+      setAgents(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(data.extension);
+        return newMap;
+      });
+      setLastUpdate(new Date());
+      addNotification(`Agent ${data.extension} logged out`, 'info');
     });
 
     return () => {

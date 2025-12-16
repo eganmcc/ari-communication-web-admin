@@ -15,9 +15,25 @@ export function calculateCallDuration(lastStatusChange: string, status: string):
 }
 
 export function formatTimeAgo(timestamp: string): string {
+  // Handle undefined, null, or empty strings
+  if (!timestamp || timestamp === '') return '--';
+  
   const last = new Date(timestamp);
+  
+  // Check if date is valid
+  if (isNaN(last.getTime())) {
+    console.warn('Invalid timestamp:', timestamp);
+    return '--';
+  }
+  
   const now = new Date();
   const diff = Math.floor((now.getTime() - last.getTime()) / 1000); // seconds
+  
+  // Handle negative diff (future dates)
+  if (diff < 0) return 'just now';
+  
+  // Ensure we're working with valid numbers
+  if (!isFinite(diff) || isNaN(diff)) return '--';
   
   if (diff < 60) return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
