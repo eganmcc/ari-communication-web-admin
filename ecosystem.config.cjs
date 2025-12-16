@@ -2,8 +2,8 @@ module.exports = {
   apps: [
     {
       name: 'agent-dashboard',
-      script: 'node_modules/vite/bin/vite.js',
-      args: 'preview --port 3002 --host',
+      script: 'node_modules/serve/build/main.js',
+      args: 'dist -l 3002',
       cwd: './',
       instances: 1,
       exec_mode: 'cluster',
