@@ -43,7 +43,10 @@ export function useAgentSocket(): UseAgentSocketReturn {
 
   useEffect(() => {
     console.log('🔌 Connecting to server:', SERVER_URL);
+    // Use /ari-socket.io/ path for production server, /socket.io/ for localhost
+    const isLocalBackend = SERVER_URL.includes('localhost') || SERVER_URL.includes('127.0.0.1');
     const socket = io(SERVER_URL, {
+      path: isLocalBackend ? '/socket.io/' : '/ari-socket.io/',
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 10,

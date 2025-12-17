@@ -24,13 +24,16 @@ export function AgentCard({ agent }: AgentCardProps) {
         agent.status === 'offline' && 'border-gray-200'
       )}
     >
-      {/* Header */}
+      {/* Header with Photo and Extension */}
       <div className="flex items-start justify-between mb-4">
-        <div>
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+          {agent.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+        </div>
+        <div className="flex-1 flex flex-col items-end">
           <div className="text-sm text-gray-500 mb-1">Extension</div>
           <div className="text-2xl font-bold text-gray-900">{agent.extension}</div>
+          <div className={clsx('w-4 h-4 rounded-full mt-2', getStatusColor(agent.status))} />
         </div>
-        <div className={clsx('w-4 h-4 rounded-full', getStatusColor(agent.status))} />
       </div>
 
       {/* Agent Name */}
