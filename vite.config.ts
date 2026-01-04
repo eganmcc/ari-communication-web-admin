@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [react()],
   base: mode === 'production' ? '/dashboard/' : '/',
   server: {
-    port: 3000,
+    port: 3003,
   },
   build: {
     sourcemap: true,
