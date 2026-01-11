@@ -127,6 +127,12 @@ export function useAgentSocket(): UseAgentSocketReturn {
     socket.on('agent:call-started', (data: CallEvent) => {
       console.log('📞 Call started:', data);
       console.log('📞 Call started timestamp:', data.timestamp, 'type:', typeof data.timestamp);
+      
+      // Log stress mode if present
+      if (data.isStressMode) {
+        console.log('🎪 STRESS TEST MODE detected - Duration:', data.stressDuration, 'seconds');
+      }
+      
       const callStartTime = data.timestamp || new Date().toISOString();
       setAgents(prev => {
         const newMap = new Map(prev);
@@ -137,8 +143,15 @@ export function useAgentSocket(): UseAgentSocketReturn {
             status: 'busy' as const,
             currentCall: data.channelId,
             lastStatusChange: callStartTime,
+            isStressMode: data.isStressMode || false,
+            stressEndTime: data.isStressMode && data.stressDuration
+              ? new Date(new Date(callStartTime).getTime() + (data.stressDuration * 1000)).toISOString()
+              : undefined,
           };
           console.log('📞 Updated agent with call start time:', callStartTime);
+          if (data.isStressMode) {
+            console.log('🎪 Stress end time set to:', updatedAgent.stressEndTime);
+          }
           newMap.set(data.extension, updatedAgent);
         }
         return newMap;
@@ -152,6 +165,11 @@ export function useAgentSocket(): UseAgentSocketReturn {
         const newMap = new Map(prev);
         const agent = newMap.get(data.extension);
         if (agent) {
+          // Log if it was a stress test
+          if (agent.isStressMode) {
+            console.log('🎪 Stress test call ended - Duration:', data.duration, 'seconds');
+          }
+          
           // Increment totalCalls ourselves since server doesn't send it
           const newTotalCalls = (data.totalCalls !== undefined) ? data.totalCalls : (agent.totalCalls + 1);
           newMap.set(data.extension, {
@@ -160,6 +178,8 @@ export function useAgentSocket(): UseAgentSocketReturn {
             currentCall: '',
             totalCalls: newTotalCalls,
             lastStatusChange: data.timestamp || new Date().toISOString(),
+            isStressMode: false,
+            stressEndTime: undefined,
           });
           console.log('✅ Updated agent totalCalls:', agent.totalCalls, '→', newTotalCalls);
         }

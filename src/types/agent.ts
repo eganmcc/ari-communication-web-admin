@@ -8,6 +8,8 @@ export interface Agent {
   totalCalls: number;
   registeredAt: string;
   lastStatusChange: string;
+  isStressMode?: boolean;
+  stressEndTime?: string;
 }
 
 export interface StatusChangeEvent {
@@ -21,6 +23,9 @@ export interface CallEvent {
   extension: string;
   channelId: string;
   timestamp: string;
+  isStressMode?: boolean;
+  stressDuration?: number;
+  callType?: string;
 }
 
 export interface CallEndEvent {

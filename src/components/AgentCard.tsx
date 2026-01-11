@@ -1,6 +1,7 @@
 import { Agent } from '../types/agent';
 import { useCallTimer } from '../hooks/useCallTimer';
 import { useTimeAgo } from '../hooks/useTimeAgo';
+import { useStressCountdown } from '../hooks/useStressCountdown';
 import { getStatusColor, getStatusLabel } from '../utils/formatters';
 import clsx from 'clsx';
 
@@ -11,17 +12,23 @@ interface AgentCardProps {
 export function AgentCard({ agent }: AgentCardProps) {
   const callDuration = useCallTimer(agent.lastStatusChange || '', agent.status);
   const lastActivity = useTimeAgo(agent.lastStatusChange || '');
+  const stressCountdown = useStressCountdown(agent.stressEndTime);
+  
+  // Determine if countdown is in warning zone (under 30 seconds)
+  const isCountdownWarning = stressCountdown && stressCountdown.startsWith('00:') && 
+    parseInt(stressCountdown.split(':')[1]) <= 30;
 
   return (
     <div
       data-extension={agent.extension}
       data-status={agent.status}
       className={clsx(
-        'bg-white rounded-lg shadow-sm p-3 border-2 transition-all duration-200 hover:shadow-md',
-        agent.status === 'available' && 'border-green-200',
-        agent.status === 'busy' && 'border-red-200',
-        agent.status === 'break' && 'border-amber-200',
-        agent.status === 'offline' && 'border-gray-200'
+        'rounded-lg shadow-sm p-3 border-2 transition-all duration-200 hover:shadow-md',
+        agent.isStressMode ? 'bg-orange-50 border-orange-400' : 'bg-white',
+        !agent.isStressMode && agent.status === 'available' && 'border-green-200',
+        !agent.isStressMode && agent.status === 'busy' && 'border-red-200',
+        !agent.isStressMode && agent.status === 'break' && 'border-amber-200',
+        !agent.isStressMode && agent.status === 'offline' && 'border-gray-200'
       )}
     >
       {/* Status Header */}
@@ -37,6 +44,21 @@ export function AgentCard({ agent }: AgentCardProps) {
           {getStatusLabel(agent.status)}
         </span>
       </div>
+
+      {/* Stress Mode Indicator */}
+      {agent.isStressMode && stressCountdown && (
+        <div className="mb-2 p-2 bg-orange-100 rounded border border-orange-300">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-orange-700">🎪 STRESS TEST</span>
+            <span className={clsx(
+              'text-sm font-mono font-bold',
+              isCountdownWarning ? 'text-red-600 animate-pulse' : 'text-orange-700'
+            )}>
+              {stressCountdown}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Agent Photo */}
       <div className="flex justify-center mb-2">
