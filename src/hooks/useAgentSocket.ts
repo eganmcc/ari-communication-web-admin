@@ -102,7 +102,11 @@ export function useAgentSocket(): UseAgentSocketReturn {
         ...agent,
         lastStatusChange: agent.lastStatusChange || new Date().toISOString(),
       };
-      setAgents(prev => new Map(prev).set(agent.extension, agentWithTimestamp));
+      setAgents(prev => {
+        const newMap = new Map(prev);
+        newMap.set(agent.extension, agentWithTimestamp);
+        return newMap;
+      });
       setLastUpdate(new Date());
       addNotification(`${agent.name} logged in`, 'success');
     });
@@ -194,7 +198,8 @@ export function useAgentSocket(): UseAgentSocketReturn {
           const newTotalCalls = (data.totalCalls !== undefined) ? data.totalCalls : (agent.totalCalls + 1);
           newMap.set(data.extension, {
             ...agent,
-            status: 'available',
+            // Don't change status here - let agent:status-changed event handle it
+            // status: agent.status, // Keep current status (could be break_short, break_long, etc.)
             currentCall: '',
             totalCalls: newTotalCalls,
             lastStatusChange: data.timestamp || new Date().toISOString(),
