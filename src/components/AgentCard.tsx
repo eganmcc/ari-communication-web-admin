@@ -17,6 +17,9 @@ export function AgentCard({ agent }: AgentCardProps) {
   // Determine if countdown is in warning zone (under 30 seconds)
   const isCountdownWarning = stressCountdown && stressCountdown.startsWith('00:') && 
     parseInt(stressCountdown.split(':')[1]) <= 30;
+  
+  // Check if agent is on break
+  const isOnBreak = agent.status === 'break_short' || agent.status === 'break_long';
 
   return (
     <div
@@ -24,11 +27,10 @@ export function AgentCard({ agent }: AgentCardProps) {
       data-status={agent.status}
       className={clsx(
         'rounded-lg shadow-sm p-3 border-2 transition-all duration-200 hover:shadow-md',
-        agent.isStressMode ? 'bg-orange-50 border-orange-400' : 'bg-white',
-        !agent.isStressMode && agent.status === 'available' && 'border-green-200',
-        !agent.isStressMode && agent.status === 'busy' && 'border-red-200',
-        !agent.isStressMode && agent.status === 'break' && 'border-amber-200',
-        !agent.isStressMode && agent.status === 'offline' && 'border-gray-200'
+        agent.isStressMode ? 'bg-orange-50 border-orange-400' : isOnBreak ? 'bg-amber-50 border-amber-400' : 'bg-white',
+        !agent.isStressMode && !isOnBreak && agent.status === 'available' && 'border-green-200',
+        !agent.isStressMode && !isOnBreak && agent.status === 'busy' && 'border-red-200',
+        !agent.isStressMode && !isOnBreak && agent.status === 'offline' && 'border-gray-200'
       )}
     >
       {/* Status Header */}
@@ -38,12 +40,21 @@ export function AgentCard({ agent }: AgentCardProps) {
           'font-semibold text-xs uppercase tracking-wide',
           agent.status === 'available' && 'text-green-600',
           agent.status === 'busy' && 'text-red-600',
-          agent.status === 'break' && 'text-amber-600',
+          isOnBreak && 'text-amber-600',
           agent.status === 'offline' && 'text-gray-600'
         )}>
           {getStatusLabel(agent.status)}
         </span>
       </div>
+
+      {/* Break Status Indicator */}
+      {isOnBreak && (
+        <div className="mb-2 p-2 bg-amber-100 rounded border border-amber-300">
+          <div className="text-xs font-bold text-amber-700">
+            {agent.status === 'break_short' ? '☕ SHORT BREAK' : '🍽️ LUNCH BREAK'}
+          </div>
+        </div>
+      )}
 
       {/* Stress Mode Indicator */}
       {agent.isStressMode && stressCountdown && (

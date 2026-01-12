@@ -45,7 +45,8 @@ export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
     available: 'bg-green-500',
     busy: 'bg-red-500',
-    break: 'bg-amber-500',
+    break_short: 'bg-amber-500',
+    break_long: 'bg-amber-500',
     offline: 'bg-gray-500',
   };
   return colors[status] || 'bg-gray-500';
@@ -55,7 +56,8 @@ export function getStatusEmoji(status: string): string {
   const emojis: Record<string, string> = {
     available: '🟢',
     busy: '🔴',
-    break: '🟡',
+    break_short: '🟡',
+    break_long: '🟡',
     offline: '⚫',
   };
   return emojis[status] || '⚫';
@@ -65,7 +67,8 @@ export function getStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     available: 'Available',
     busy: 'Busy',
-    break: 'Break',
+    break_short: 'On Break',
+    break_long: 'On Break',
     offline: 'Offline',
   };
   return labels[status] || 'Unknown';

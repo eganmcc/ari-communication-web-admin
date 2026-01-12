@@ -27,7 +27,8 @@ export function Dashboard() {
         case 'busy':
           busy++;
           break;
-        case 'break':
+        case 'break_short':
+        case 'break_long':
           onBreak++;
           break;
         case 'offline':

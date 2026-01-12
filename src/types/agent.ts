@@ -1,4 +1,4 @@
-export type AgentStatus = 'available' | 'busy' | 'break' | 'offline';
+export type AgentStatus = 'available' | 'busy' | 'break_short' | 'break_long' | 'offline';
 
 export interface Agent {
   extension: string;
@@ -10,6 +10,9 @@ export interface Agent {
   lastStatusChange: string;
   isStressMode?: boolean;
   stressEndTime?: string;
+  breakType?: 'short' | 'long';
+  breakEndTime?: string;
+  breakDuration?: number;
 }
 
 export interface StatusChangeEvent {
@@ -17,6 +20,9 @@ export interface StatusChangeEvent {
   oldStatus: AgentStatus;
   newStatus: AgentStatus;
   timestamp: string;
+  breakType?: 'short' | 'long';
+  breakEndTime?: string;
+  breakDuration?: number;
 }
 
 export interface CallEvent {

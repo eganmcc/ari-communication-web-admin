@@ -109,15 +109,35 @@ export function useAgentSocket(): UseAgentSocketReturn {
 
     socket.on('agent:status-changed', (data: StatusChangeEvent) => {
       console.log('🔄 Agent status changed:', data);
+      
+      // Log break status with metadata
+      if (data.newStatus === 'break_short' || data.newStatus === 'break_long') {
+        console.log(`🟡 Agent ${data.extension} on ${data.breakType} break until ${data.breakEndTime}`);
+      }
+      
       setAgents(prev => {
         const newMap = new Map(prev);
         const agent = newMap.get(data.extension);
         if (agent) {
-          newMap.set(data.extension, {
+          const updatedAgent = {
             ...agent,
             status: data.newStatus,
             lastStatusChange: data.timestamp || new Date().toISOString(),
-          });
+          };
+          
+          // Add break metadata if present
+          if (data.newStatus === 'break_short' || data.newStatus === 'break_long') {
+            updatedAgent.breakType = data.breakType;
+            updatedAgent.breakEndTime = data.breakEndTime;
+            updatedAgent.breakDuration = data.breakDuration;
+          } else {
+            // Clear break metadata when not on break
+            updatedAgent.breakType = undefined;
+            updatedAgent.breakEndTime = undefined;
+            updatedAgent.breakDuration = undefined;
+          }
+          
+          newMap.set(data.extension, updatedAgent);
         }
         return newMap;
       });
