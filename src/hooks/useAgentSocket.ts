@@ -196,10 +196,16 @@ export function useAgentSocket(): UseAgentSocketReturn {
           
           // Increment totalCalls ourselves since server doesn't send it
           const newTotalCalls = (data.totalCalls !== undefined) ? data.totalCalls : (agent.totalCalls + 1);
+          
+          // Determine status after call ends:
+          // - If agent was on break before call, keep break status
+          // - Otherwise, return to available
+          const wasOnBreak = agent.breakType !== undefined;
+          const newStatus = wasOnBreak ? agent.status : 'available';
+          
           newMap.set(data.extension, {
             ...agent,
-            // Don't change status here - let agent:status-changed event handle it
-            // status: agent.status, // Keep current status (could be break_short, break_long, etc.)
+            status: newStatus,
             currentCall: '',
             totalCalls: newTotalCalls,
             lastStatusChange: data.timestamp || new Date().toISOString(),
