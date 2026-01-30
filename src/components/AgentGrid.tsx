@@ -6,9 +6,9 @@ interface AgentGridProps {
 }
 
 export function AgentGrid({ agents }: AgentGridProps) {
-  const agentList = Array.from(agents.values()).sort((a, b) => 
-    a.extension.localeCompare(b.extension)
-  );
+  const agentList = Array.from(agents.values())
+    .filter(agent => agent && agent.extension) // Filter out invalid agents
+    .sort((a, b) => a.extension.localeCompare(b.extension));
 
   if (agentList.length === 0) {
     return (
