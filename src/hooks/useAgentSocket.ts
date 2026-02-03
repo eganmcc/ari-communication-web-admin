@@ -9,6 +9,9 @@ interface UseAgentSocketReturn {
   notifications: Notification[];
   bridgeVersion: string;
   apiVersion: string;
+  dialerVersion: string;
+  dialerLastUpdate: Date | null;
+  dialerState: 'stopped' | 'starting' | 'idle' | 'dialing' | 'unknown';
 }
 
 interface Notification {
@@ -18,8 +21,9 @@ interface Notification {
   timestamp: Date;
 }
 
-const SERVER_URL = import.meta.env.VITE_SOCKET_URL || 'http://10.0.3.230:3100';
-const API_URL = import.meta.env.PROD ? 'https://livewire.ptdika.local' : 'http://10.0.3.230:3001';
+const SERVER_URL = import.meta.env.VITE_SOCKET_URL;
+const API_URL = import.meta.env.VITE_API_URL;
+const DIALER_URL = import.meta.env.VITE_DIALER_URL;
 
 export function useAgentSocket(): UseAgentSocketReturn {
   const [agents, setAgents] = useState<Map<string, Agent>>(new Map());
@@ -28,8 +32,12 @@ export function useAgentSocket(): UseAgentSocketReturn {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [bridgeVersion, setBridgeVersion] = useState<string>('...');
   const [apiVersion, setApiVersion] = useState<string>('...');
+  const [dialerVersion, setDialerVersion] = useState<string>('...');
+  const [dialerState, setDialerState] = useState<'stopped' | 'starting' | 'idle' | 'dialing' | 'unknown'>('unknown');
+  const [dialerLastUpdate, setDialerLastUpdate] = useState<Date | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const apiSocketRef = useRef<Socket | null>(null);
+  const dialerSocketRef = useRef<Socket | null>(null);
   const highlightTimers = useRef<Map<string, number>>(new Map());
   const isInitialLoadComplete = useRef(false);
   const pendingStatusEvents = useRef<StatusChangeEvent[]>([]);
@@ -349,6 +357,40 @@ export function useAgentSocket(): UseAgentSocketReturn {
     };
   }, []);
 
+  // Dialer Socket connection
+  useEffect(() => {
+    const isProduction = import.meta.env.PROD;
+    const dialerSocket = io(DIALER_URL, {
+      path: isProduction ? '/dialer-socket.io/' : '/socket.io/',
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+    });
+
+    dialerSocketRef.current = dialerSocket;
+
+    dialerSocket.on('connect', () => {
+      console.log('✅ Connected to dialer');
+    });
+
+    dialerSocket.on('disconnect', () => {
+      console.log('❌ Disconnected from dialer');
+      setDialerState('unknown');
+    });
+
+    dialerSocket.on('dialer:info', (data: { version: string; dialerState: string }) => {
+      setDialerVersion(data.version);
+      setDialerState(data.dialerState as 'stopped' | 'starting' | 'idle' | 'dialing');
+      setDialerLastUpdate(new Date());
+    });
+
+    return () => {
+      console.log('🔌 Disconnecting dialer socket');
+      dialerSocket.disconnect();
+    };
+  }, []);
+
   return {
     agents,
     isConnected,
@@ -356,5 +398,8 @@ export function useAgentSocket(): UseAgentSocketReturn {
     notifications,
     bridgeVersion,
     apiVersion,
+    dialerVersion,
+    dialerState,
+    dialerLastUpdate,
   };
 }

@@ -8,7 +8,7 @@ import { NotificationContainer } from './Notification';
 import { AgentStats } from '../types/agent';
 
 export function Dashboard() {
-  const { agents, isConnected, lastUpdate, notifications, bridgeVersion, apiVersion } = useAgentSocket();
+  const { agents, isConnected, lastUpdate, notifications, bridgeVersion, apiVersion, dialerState, dialerVersion, dialerLastUpdate } = useAgentSocket();
   const [closedNotifications, setClosedNotifications] = useState<Set<string>>(new Set());
 
   const stats: AgentStats = useMemo(() => {
@@ -55,7 +55,7 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header isConnected={isConnected} lastUpdate={lastUpdate} bridgeVersion={bridgeVersion} apiVersion={apiVersion} />
+      <Header isConnected={isConnected} lastUpdate={lastUpdate} bridgeVersion={bridgeVersion} apiVersion={apiVersion} dialerState={dialerState} dialerVersion={dialerVersion} dialerLastUpdate={dialerLastUpdate} />
       <SummaryStats stats={stats} />
       <AgentGrid agents={agents} />
       <QueuePlaceholder />

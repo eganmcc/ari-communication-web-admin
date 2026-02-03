@@ -5,11 +5,14 @@ interface HeaderProps {
   lastUpdate: Date | null;
   bridgeVersion: string;
   apiVersion: string;
+  dialerState: 'stopped' | 'starting' | 'idle' | 'dialing' | 'unknown';
+  dialerVersion: string;
+  dialerLastUpdate: Date | null;
 }
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 
-export function Header({ isConnected, lastUpdate, bridgeVersion, apiVersion }: HeaderProps) {
+export function Header({ isConnected, lastUpdate, bridgeVersion, apiVersion, dialerState, dialerVersion, dialerLastUpdate }: HeaderProps) {
   const logoPath = import.meta.env.PROD ? '/dashboard/lightning.svg' : '/lightning.svg';
   
   return (
@@ -20,11 +23,11 @@ export function Header({ isConnected, lastUpdate, bridgeVersion, apiVersion }: H
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Live Wire Agent Monitor</h1>
             <div className="text-xs text-gray-500">
-              UI: {VERSION} | Bridge: {bridgeVersion} | API: {apiVersion}
+              Dashboard: {VERSION} | Bridge: {bridgeVersion} | Voice API: {apiVersion} | Dialer API: {dialerVersion}
             </div>
           </div>
         </div>
-        <ConnectionStatus isConnected={isConnected} lastUpdate={lastUpdate} />
+        <ConnectionStatus isConnected={isConnected} lastUpdate={lastUpdate} dialerState={dialerState} dialerVersion={dialerVersion} dialerLastUpdate={dialerLastUpdate} />
       </div>
     </header>
   );
